@@ -1,0 +1,554 @@
+<html><head><base href="https://example.com">
+    <title>Snake Game with Customizable Skin</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #gameContainer {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            background-color: #000;
+            border: 2px solid #444;
+            overflow: hidden;
+        }
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .control-group {
+            margin: 10px 0;
+        }
+        label {
+            margin-right: 10px;
+        }
+        input[type="color"], select {
+            padding: 5px;
+            border: none;
+            border-radius: 4px;
+        }
+        #startButton {
+            padding: 10px 20px;
+            background-color: #28a745;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #startButton:hover {
+            background-color: #218838;
+        }
+        .segment {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #00ff00;
+            border-radius: 4px;
+            border: 1px solid #ffffff;
+            transition: background-color 0.3s, border-radius 0.3s, border 0.3s;
+        }
+        .food {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #ff0000;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+            z-index: 5;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        /* Additional Styles for Mobile Controls and Leaderboard */
+        #mobileControls {
+            display: none;
+            margin-top: 20px;
+        }
+        .control-button {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            background-color: #444;
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .control-button:active {
+            background-color: #666;
+        }
+        #scoreBoard {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+        #gameOverScreen, #leaderboardScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 500px;
+            height: 500px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            display: none;
+            z-index: 10;
+        }
+        #gameOverScreen.active, #leaderboardScreen.active {
+            display: flex;
+        }
+        #leaderboard {
+            margin-top: 20px;
+            width: 80%;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        #leaderboard ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #leaderboard li {
+            padding: 5px 0;
+            border-bottom: 1px solid #555;
+        }
+        @media (max-width: 600px) {
+            #mobileControls {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .control-row {
+                display: flex;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Customizable Snake Game</h1>
+    <div id="gameContainer">
+        <!-- Snake and food elements will be dynamically added here -->
+        <div id="gameOverScreen">
+            <h2>Game Over</h2>
+            <p>Your Score: <span id="finalScore">0</span></p>
+            <input type="text" id="usernameInput" placeholder="Enter Username" maxlength="20">
+            <button id="submitScoreButton">Submit Score</button>
+            <button id="viewLeaderboardButton">View Leaderboard</button>
+        </div>
+    </div>
+    <div id="leaderboardScreen">
+        <h2>Leaderboard</h2>
+        <div id="leaderboard">
+            <ul id="leaderboardList">
+                <!-- Leaderboard entries will be added here -->
+            </ul>
+        </div>
+        <button id="closeLeaderboardButton">Close</button>
+    </div>
+    <div id="controls">
+        <div class="control-group">
+            <label for="snakeColor">Snake Color:</label>
+            <input type="color" id="snakeColor" value="#00ff00">
+        </div>
+        <div class="control-group">
+            <label for="skinStyle">Skin Style:</label>
+            <select id="skinStyle">
+                <option value="default">Default</option>
+                <option value="rounded">Rounded</option>
+                <option value="square">Square</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="foodColor">Food Color:</label>
+            <input type="color" id="foodColor" value="#ff0000">
+        </div>
+        <button id="startButton">Start Game</button>
+    </div>
+    <div id="scoreBoard">Score: <span id="score">0</span></div>
+    <div id="mobileControls">
+        <div class="control-row">
+            <button class="control-button" id="upButton">▲</button>
+        </div>
+        <div class="control-row">
+            <button class="control-button" id="leftButton">◀</button>
+            <button class="control-button" id="downButton">▼</button>
+            <button class="control-button" id="rightButton">▶</button>
+        </div>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('gameContainer');
+        const snakeColorInput = document.getElementById('snakeColor');
+        const skinStyleSelect = document.getElementById('skinStyle');
+        const foodColorInput = document.getElementById('foodColor');
+        const startButton = document.getElementById('startButton');
+        const scoreSpan = document.getElementById('score');
+        const scoreBoard = document.getElementById('scoreBoard');
+
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScore = document.getElementById('finalScore');
+        const usernameInput = document.getElementById('usernameInput');
+        const submitScoreButton = document.getElementById('submitScoreButton');
+        const viewLeaderboardButton = document.getElementById('viewLeaderboardButton');
+
+        const leaderboardScreen = document.getElementById('leaderboardScreen');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const closeLeaderboardButton = document.getElementById('closeLeaderboardButton');
+
+        const mobileControls = document.getElementById('mobileControls');
+        const upButton = document.getElementById('upButton');
+        const downButton = document.getElementById('downButton');
+        const leftButton = document.getElementById('leftButton');
+        const rightButton = document.getElementById('rightButton');
+
+        let snake = [{x: 10, y: 10}];
+        let direction = 'right';
+        let food = {x: 15, y: 15};
+        let gameInterval;
+        const gridSize = 20;
+        const gridCount = 25;
+        let score = 0;
+        let isGameOver = false;
+        let sceneCount = 0;
+
+        // Device Detection
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isConsole = navigator.userAgent.match(/PlayStation|Xbox|Nintendo/i);
+
+        // Event listeners for customization and controls
+        snakeColorInput.addEventListener('input', updateSnakeAppearance);
+        skinStyleSelect.addEventListener('change', updateSnakeAppearance);
+        foodColorInput.addEventListener('input', updateFoodAppearance);
+        startButton.addEventListener('click', startGame);
+
+        submitScoreButton.addEventListener('click', submitScore);
+        viewLeaderboardButton.addEventListener('click', showLeaderboard);
+        closeLeaderboardButton.addEventListener('click', () => {
+            leaderboardScreen.classList.remove('active');
+        });
+
+        if (isMobile) {
+            setupMobileControls();
+        }
+
+        // Initialize game
+        initializeGame();
+
+        function initializeGame() {
+            renderSnake();
+            placeFood();
+            document.addEventListener('keydown', changeDirection);
+            if (!isMobile) {
+                document.addEventListener('keydown', changeDirection);
+            }
+        }
+
+        function startGame() {
+            clearInterval(gameInterval);
+            snake = [{x: 10, y: 10}];
+            direction = 'right';
+            score = 0;
+            isGameOver = false;
+            scoreSpan.textContent = score;
+            sceneCount = 0;
+            gameOverScreen.classList.remove('active');
+            leaderboardScreen.classList.remove('active');
+            // Remove existing snake and food
+            const existingSegments = document.querySelectorAll('.segment');
+            existingSegments.forEach(seg => seg.remove());
+            const existingFood = document.querySelector('.food');
+            if (existingFood) existingFood.remove();
+            renderSnake();
+            placeFood();
+            if (!isMobile) {
+                document.removeEventListener('keydown', changeDirection);
+                document.addEventListener('keydown', changeDirection);
+            }
+            gameInterval = setInterval(gameLoop, 200);
+        }
+
+        function gameLoop() {
+            moveSnake();
+            if (checkCollision()) {
+                endGame();
+                return;
+            }
+            if (snake[0].x === food.x && snake[0].y === food.y) {
+                snake.push({x: food.x, y: food.y});
+                score += 10;
+                scoreSpan.textContent = score;
+                placeFood();
+            }
+            renderSnake();
+        }
+
+        function moveSnake() {
+            const head = {...snake[0]};
+            switch(direction) {
+                case 'up': head.y -= 1; break;
+                case 'down': head.y += 1; break;
+                case 'left': head.x -= 1; break;
+                case 'right': head.x += 1; break;
+            }
+            snake.unshift(head);
+            snake.pop();
+        }
+
+        function checkCollision() {
+            const head = snake[0];
+            // Wall collision
+            if (head.x < 0 || head.x >= gridCount || head.y < 0 || head.y >= gridCount) {
+                return true;
+            }
+            // Self collision
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function renderSnake() {
+            // Remove existing snake segments
+            const existingSegments = document.querySelectorAll('.segment');
+            existingSegments.forEach(seg => seg.remove());
+
+            snake.forEach(segment => {
+                const seg = document.createElement('div');
+                seg.classList.add('segment');
+                seg.style.left = `${segment.x * gridSize}px`;
+                seg.style.top = `${segment.y * gridSize}px`;
+                seg.style.backgroundColor = snakeColorInput.value;
+                const style = skinStyleSelect.value;
+                if (style === 'rounded') {
+                    seg.style.borderRadius = '50%';
+                } else if (style === 'square') {
+                    seg.style.borderRadius = '0';
+                } else {
+                    seg.style.borderRadius = '4px';
+                }
+                seg.style.border = `1px solid ${getContrastingColor(snakeColorInput.value)}`;
+                gameContainer.appendChild(seg);
+            });
+        }
+
+        function renderFood() {
+            // Remove existing food
+            const existingFood = document.querySelector('.food');
+            if (existingFood) existingFood.remove();
+
+            const foodEl = document.createElement('div');
+            foodEl.classList.add('food');
+            foodEl.style.left = `${food.x * gridSize}px`;
+            foodEl.style.top = `${food.y * gridSize}px`;
+            foodEl.style.backgroundColor = foodColorInput.value;
+            gameContainer.appendChild(foodEl);
+        }
+
+        function placeFood() {
+            let newFoodPosition;
+            let collision = false;
+            let attempts = 0;
+            do {
+                newFoodPosition = {
+                    x: Math.floor(Math.random() * gridCount),
+                    y: Math.floor(Math.random() * gridCount)
+                };
+                collision = snake.some(segment => segment.x === newFoodPosition.x && segment.y === newFoodPosition.y);
+                attempts++;
+                // Prevent infinite loop in case the snake fills the grid
+                if (attempts > 100) {
+                    endGame();
+                    return;
+                }
+            } while (collision);
+            food = newFoodPosition;
+            renderFood();
+        }
+
+        function changeDirection(e) {
+            switch(e.key) {
+                case 'ArrowUp':
+                    if(direction !== 'down') direction = 'up';
+                    break;
+                case 'ArrowDown':
+                    if(direction !== 'up') direction = 'down';
+                    break;
+                case 'ArrowLeft':
+                    if(direction !== 'right') direction = 'left';
+                    break;
+                case 'ArrowRight':
+                    if(direction !== 'left') direction = 'right';
+                    break;
+            }
+        }
+
+        function updateSnakeAppearance() {
+            const segments = document.querySelectorAll('.segment');
+            segments.forEach(seg => {
+                seg.style.backgroundColor = snakeColorInput.value;
+                const style = skinStyleSelect.value;
+                if (style === 'rounded') {
+                    seg.style.borderRadius = '50%';
+                } else if (style === 'square') {
+                    seg.style.borderRadius = '0';
+                } else {
+                    seg.style.borderRadius = '4px';
+                }
+                seg.style.border = `1px solid ${getContrastingColor(snakeColorInput.value)}`;
+            });
+        }
+
+        function updateFoodAppearance() {
+            const foodEl = document.querySelector('.food');
+            if(foodEl) {
+                foodEl.style.backgroundColor = foodColorInput.value;
+            }
+        }
+
+        function getContrastingColor(hex) {
+            // Remove the hash symbol if present
+            hex = hex.replace('#', '');
+            // Convert to RGB
+            const r = parseInt(hex.substr(0,2),16);
+            const g = parseInt(hex.substr(2,2),16);
+            const b = parseInt(hex.substr(4,2),16);
+            // Calculate luminance
+            const luminance = (0.299*r + 0.587*g + 0.114*b)/255;
+            return luminance > 0.5 ? '#000000' : '#FFFFFF';
+        }
+
+        function setupMobileControls() {
+            // Ensure mobileControls is empty before adding buttons
+            mobileControls.innerHTML = '';
+
+            const upBtn = document.createElement('button');
+            upBtn.id = 'upButton';
+            upBtn.classList.add('control-button');
+            upBtn.textContent = '▲';
+            upBtn.addEventListener('click', () => changeDirectionMobile('up'));
+
+            const downBtn = document.createElement('button');
+            downBtn.id = 'downButton';
+            downBtn.classList.add('control-button');
+            downBtn.textContent = '▼';
+            downBtn.addEventListener('click', () => changeDirectionMobile('down'));
+
+            const leftBtn = document.createElement('button');
+            leftBtn.id = 'leftButton';
+            leftBtn.classList.add('control-button');
+            leftBtn.textContent = '◀';
+            leftBtn.addEventListener('click', () => changeDirectionMobile('left'));
+
+            const rightBtn = document.createElement('button');
+            rightBtn.id = 'rightButton';
+            rightBtn.classList.add('control-button');
+            rightBtn.textContent = '▶';
+            rightBtn.addEventListener('click', () => changeDirectionMobile('right'));
+
+            const upRow = document.createElement('div');
+            upRow.classList.add('control-row');
+            upRow.appendChild(upBtn);
+
+            const middleRow = document.createElement('div');
+            middleRow.classList.add('control-row');
+            middleRow.appendChild(leftBtn);
+            middleRow.appendChild(downBtn);
+            middleRow.appendChild(rightBtn);
+
+            mobileControls.appendChild(upRow);
+            mobileControls.appendChild(middleRow);
+        }
+
+        function changeDirectionMobile(newDirection) {
+            if(
+                (newDirection === 'up' && direction !== 'down') ||
+                (newDirection === 'down' && direction !== 'up') ||
+                (newDirection === 'left' && direction !== 'right') ||
+                (newDirection === 'right' && direction !== 'left')
+            ){
+                direction = newDirection;
+            }
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            isGameOver = true;
+            finalScore.textContent = score;
+            gameOverScreen.classList.add('active');
+            updateLeaderboard();
+            changeScene();
+        }
+
+        function submitScore() {
+            const username = usernameInput.value.trim();
+            if(username === '') {
+                alert('Please enter a username.');
+                return;
+            }
+            const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+            leaderboard.push({ username, score });
+            leaderboard.sort((a, b) => b.score - a.score);
+            if(leaderboard.length > 10) {
+                leaderboard.pop();
+            }
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+            showLeaderboard();
+        }
+
+        function updateLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+            leaderboardList.innerHTML = '';
+            leaderboard.forEach((entry, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${entry.username} - ${entry.score}`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        function showLeaderboard() {
+            updateLeaderboard();
+            leaderboardScreen.classList.add('active');
+        }
+
+        // Scene Change Logic
+        function changeScene() {
+            sceneCount++;
+            const scenes = ['#1e1e1e', '#2e2e2e', '#3e3e3e', '#4e4e4e'];
+            document.body.style.backgroundColor = scenes[sceneCount % scenes.length];
+        }
+
+        // Leaderboard Button in Game Over Screen to view leaderboard
+        viewLeaderboardButton.addEventListener('click', () => {
+            showLeaderboard();
+        });
+
+        // Initialize Leaderboard on Load
+        window.addEventListener('load', () => {
+            updateLeaderboard();
+        });
+    </script>
+</body>
+</html>
